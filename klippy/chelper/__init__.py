@@ -20,8 +20,8 @@ SOURCE_FILES = [
     'pyhelper.c', 'serialqueue.c', 'stepcompress.c', 'itersolve.c', 'trapq.c',
     'pollreactor.c', 'msgblock.c', 'trdispatch.c',
     'kin_cartesian.c', 'kin_corexy.c', 'kin_corexz.c', 'kin_delta.c',
-    'kin_deltesian.c', 'kin_polar.c', 'kin_rotary_delta.c', 'kin_winch.c',
-    'kin_extruder.c', 'kin_shaper.c', 'kin_idex.c',
+    'kin_deltesian.c', 'kin_polar.c', 'kin_rotary_delta.c', 'kin_convergent_delta.c',
+    'kin_winch.c', 'kin_extruder.c', 'kin_shaper.c', 'kin_idex.c',
 ]
 DEST_LIB = "c_helper.so"
 OTHER_FILES = [
@@ -135,6 +135,12 @@ defs_kin_rotary_delta = """
         , double angle, double upper_arm, double lower_arm);
 """
 
+defs_kin_convergent_delta = """
+    struct stepper_kinematics *convergent_delta_stepper_alloc(
+        double arm2, double x1, double y1, double z1, double x2, double y2, double z2);
+"""
+
+
 defs_kin_winch = """
     struct stepper_kinematics *winch_stepper_alloc(double anchor_x
         , double anchor_y, double anchor_z);
@@ -222,7 +228,7 @@ defs_all = [
     defs_pyhelper, defs_serialqueue, defs_std, defs_stepcompress,
     defs_itersolve, defs_trapq, defs_trdispatch,
     defs_kin_cartesian, defs_kin_corexy, defs_kin_corexz, defs_kin_delta,
-    defs_kin_deltesian, defs_kin_polar, defs_kin_rotary_delta, defs_kin_winch,
+    defs_kin_deltesian, defs_kin_polar, defs_kin_rotary_delta, defs_kin_convergent_delta, defs_kin_winch,
     defs_kin_extruder, defs_kin_shaper, defs_kin_idex,
 ]
 

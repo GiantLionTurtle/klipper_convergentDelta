@@ -47,8 +47,23 @@ class ConvergentDeltaKinematics:
         self.need_home = True
         self.home_position = tuple(self._actuators_to_cartesian([0.0, 0.0, 0.0]))
 
-        self.actuators = []
-        self.arm2 = 0.0
+        self.actuators = [Actuator( [sconfig.getfloat('min_x'), sconfig.getfloat('min_y'), sconfig.getfloat('min_z')],
+                                    [sconfig.getfloat('max_x'), sconfig.getfloat('max_y'), sconfig.getfloat('max_z')])
+                                    for sconfig in stepper_configs]
+
+        arm_length_a = stepper_configs[0].getfloat('arm_length', above=0)
+        self.arm_lengths = arm_lengths = [sconfig.getfloat('arm_length', arm_length_a, above=0)
+                                            for sconfig in stepper_configs]
+        self.arm2 = [arm**2 for arm in arm_lengths]
+
+        for rail, arm2, act in zip(self.rails, self.arm2, self.actuators):
+            rail.setup_itersolve('convergent_delta_stepper_alloc', arm2, 
+                act.start[0], act.start[1], act.start[2], act.end[0], act.end[1], act.end[2])
+        for s in self.get_steppers():
+            s.set_trapq(toolhead.get_trapq())
+            toolhead.register_step_generator(s.generate_steps)
+
+        self.set_position([0.0, 0.0, 0.0], "")
 
     def get_steppers(self):
         return [s for rail in self.rails for s in rail.get_steppers()]
