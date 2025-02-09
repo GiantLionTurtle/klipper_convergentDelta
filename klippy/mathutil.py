@@ -127,6 +127,12 @@ def matrix_dot(m1, m2):
 def matrix_magsq(m1):
     return m1[0]**2 + m1[1]**2 + m1[2]**2
 
+def matrix_mag(m1):
+    return math.sqrt(matrix_magsq(m1))
+
+def matrix_normalize(m1):
+    return matrix_div(m1, matrix_mag(m1))
+
 def matrix_add(m1, m2):
     return [m1[0] + m2[0], m1[1] + m2[1], m1[2] + m2[2]]
 
@@ -135,3 +141,6 @@ def matrix_sub(m1, m2):
 
 def matrix_mul(m1, s):
     return [m1[0]*s, m1[1]*s, m1[2]*s]
+
+def matrix_div(m1, s):
+    return [m1[0]/s, m1[1]/s, m1[2]/s]
