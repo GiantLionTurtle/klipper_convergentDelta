@@ -45,7 +45,7 @@ class ConvergentDeltaKinematics:
         self.max_z_velocity = config.getfloat('max_z_accel', self.max_accel, above=0., maxval=self.max_accel)
         
         self.need_home = True
-        self.home_position = tuple(self._actuators_to_cartesian())
+        self.home_position = tuple(self._actuators_to_cartesian([0.0, 0.0, 0.0]))
 
         self.actuators = []
         self.arm2 = 0.0
@@ -73,6 +73,9 @@ class ConvergentDeltaKinematics:
     def home(self, homing_state):
         # Home all axes at the same time
         homing_state.set_axes([0, 1, 2])
+        forcepos = list(self.home_position)
+        forcepos[2] = forcepos[2]-100
+        homing_state.home_rails(self.rails, forcepos, self.home_position)
 
     def check_move(self, move):
 
