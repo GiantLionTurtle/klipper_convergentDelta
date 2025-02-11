@@ -9,7 +9,7 @@ class Actuator:
         self.length = mathutil.matrix_mag(self.direction())
     
     def at_lerp(self, lerp):
-        return self.direction().times(lerp).plus(self.start)
+        return mathutil.matrix_add(mathutil.matrix_mul(self.direction(), lerp), self.start)
     def at_dist(self, dist):
         return self.at_lerp(dist / self.length) # is this right within the context of clipper?
 
@@ -43,9 +43,6 @@ class ConvergentDeltaKinematics:
         self.max_velocity, self.max_accel = toolhead.get_max_velocity()
         self.max_z_velocity = config.getfloat('max_z_velocity', self.max_velocity, above=0., maxval=self.max_velocity)
         self.max_z_velocity = config.getfloat('max_z_accel', self.max_accel, above=0., maxval=self.max_accel)
-        
-        self.need_home = True
-        self.home_position = tuple(self._actuators_to_cartesian([0.0, 0.0, 0.0]))
 
         self.actuators = [Actuator( [sconfig.getfloat('min_x'), sconfig.getfloat('min_y'), sconfig.getfloat('min_z')],
                                     [sconfig.getfloat('max_x'), sconfig.getfloat('max_y'), sconfig.getfloat('max_z')])
@@ -56,6 +53,10 @@ class ConvergentDeltaKinematics:
                                             for sconfig in stepper_configs]
         self.arm2 = [arm**2 for arm in arm_lengths]
 
+        self.need_home = True
+        self.home_position = tuple(self._actuators_to_cartesian([0.0, 0.0, 0.0]))
+        
+
         for rail, arm2, act in zip(self.rails, self.arm2, self.actuators):
             rail.setup_itersolve('convergent_delta_stepper_alloc', arm2, 
                 act.start[0], act.start[1], act.start[2], act.end[0], act.end[1], act.end[2])
@@ -64,6 +65,10 @@ class ConvergentDeltaKinematics:
             toolhead.register_step_generator(s.generate_steps)
 
         self.set_position([0.0, 0.0, 0.0], "")
+
+    def make_headless(self, actuators, arm2):
+        self.actuators = actuators
+        self.arm2 = [arm2, arm2, arm2]
 
     def get_steppers(self):
         return [s for rail in self.rails for s in rail.get_steppers()]
@@ -101,3 +106,6 @@ class ConvergentDeltaKinematics:
         return {
             'homed_axes': '' if self.need_home else 'xyz',
         }
+
+def load_kinematics(toolhead, config):
+    return ConvergentDeltaKinematics(toolhead, config)
