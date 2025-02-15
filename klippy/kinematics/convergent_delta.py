@@ -20,23 +20,15 @@ class Actuator:
     def direction_normal(self):
         return mathutil.matrix_normalize(self.direction())
 
-    def offset(self, by):
-        return Actuator(mathutil.matrix_add(self.start, by), mathutil.matrix_add(self.end, by))
-
-    def trim(self, start_trim: float, end_trim: float):
-        dir_norm = self.direction_normal()
-        return Actuator(mathutil.matrix_add(self.start, mathutil.matrix_mul(dir_norm, start_trim)), 
-                        mathutil.matrix_sub(self.end, mathutil.matrix_mul(dir_norm, end_trim)))
-
-
 class ConvergentDeltaKinematics:
     def __init__(self):
 
         self.rails = []
 
-        # Read config
         self.max_velocity = 0.0
         self.max_accel = 0.0
+        self.work_radius2 = 0.0
+        self.work_height = 0.0
         
         self.max_z_velocity = 0.0
         self.max_z_accel = 0.0
@@ -65,6 +57,8 @@ class ConvergentDeltaKinematics:
         out.max_velocity, out.max_accel = toolhead.get_max_velocity()
         out.max_z_velocity = config.getfloat('max_z_velocity', out.max_velocity, above=0., maxval=out.max_velocity)
         out.max_z_accel = config.getfloat('max_z_accel', out.max_accel, above=0., maxval=out.max_accel)
+        out.work_radius2 = config.getfloat('work_radius', above=0) ** 2
+        out.work_height = config.getfloat('work_height', above=0)
 
         out.actuators = [Actuator( [sconfig.getfloat('min_x'), sconfig.getfloat('min_y'), sconfig.getfloat('min_z')],
                                     [sconfig.getfloat('max_x'), sconfig.getfloat('max_y'), sconfig.getfloat('max_z')])
@@ -124,9 +118,18 @@ class ConvergentDeltaKinematics:
         homing_state.home_rails(self.rails, forcepos, self.home_position)
 
     def check_move(self, move):
+        
+        end_pos = move.end_pos
 
         if self.need_home:
             raise move.move_error("Must home first")
+        
+        if (end_pos[0]**2 + end_pos[1]**2) > self.work_radius2:
+            raise move.move_error("Outside work cylinder [xy]")
+        
+        if end_pos[2] > self.work_height or end_pos[2] < 0.0: 
+            raise move.move_error("Outside work cylinder [z]")
+
         
     def get_status(self, eventtime):
         return {
