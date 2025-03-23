@@ -5,6 +5,7 @@
 #include "compiler.h" // __visible
 #include "itersolve.h" // struct stepper_kinematics
 #include "trapq.h" // move_get_coord
+#include <stdio.h>
 
 struct convdelta_stepper {
     struct stepper_kinematics sk;
@@ -16,9 +17,13 @@ struct convdelta_stepper {
 double 
 dot(double x1, double y1, double z1, double x2, double y2, double z2)
 {
-    double dx = x1-x2;
-    double dy = y1-y2;
-    double dz = z1-z2;
+    return x1*x2 + y1*y2 + z1*z2;
+}
+double length2(double x1, double y1, double z1, double x2, double y2, double z2)
+{
+    double dx = x2-x1;
+    double dy = y2-y1;
+    double dz = z2-z1;
     return dx*dx+dy*dy+dz*dz;
 }
 
@@ -57,22 +62,51 @@ convdelta_stepper_calc_position(struct stepper_kinematics *sk, struct move *m
     double pos_on_actuator = 0.0;
     struct coord closest_pos;
     closest_point(ds, target, &closest_pos, &pos_on_actuator);
-    double dist_to_act2 = dot(closest_pos.x, closest_pos.y, closest_pos.z, target.x, target.y, target.z);
+    // printf("start={%f, %f, %f}", ds->start.x, ds->start.y, ds->start.z);
+    // printf("end={%f, %f, %f}", ds->end.x, ds->end.y, ds->end.z);
+    // printf("target={%f, %f, %f}", target.x, target.y, target.z);
+    // printf("closest_pos={%f, %f, %f}", closest_pos.x, closest_pos.y, closest_pos.z);
 
+    double dist_to_act2 = dot(closest_pos.x, closest_pos.y, closest_pos.z, target.x, target.y, target.z);
+    // printf("dist_to_act2=%f", dist_to_act2);
+    // printf("pos_on_actuator=%f", pos_on_actuator);
     if(dist_to_act2 >= ds->arm2) { // impossible or limit position
         return pos_on_actuator >= ds->length ? ds->length : 0.0;
     }
 
-    // Not directly perpendicular, not too far
-    // solve for second cathede of a right triangle
+    // // Not directly perpendicular, not too far
+    // // solve for second cathede of a right triangle
     double offset_along_actuator = sqrt(ds->arm2 - dist_to_act2);
     
-    if(pos_on_actuator - offset_along_actuator >= 0.0) {
-        return pos_on_actuator - offset_along_actuator;
-    } else if(pos_on_actuator + pos_on_actuator <= ds->length) {
-        return pos_on_actuator + offset_along_actuator;
-    }
-    return 0.0;
+    // printf("offset_along_actuator=%f", offset_along_actuator);
+    // printf("dslength=%f", ds->length);
+    // double plus_option = pos_on_actuator + offset_along_actuator;
+    double minus_option = pos_on_actuator - offset_along_actuator;
+
+    // if(plus_option >= 0.0 && plus_option <= ds->length) {
+        // printf("gotoplus=%f", plus_option);
+    //     return plus_option;
+    // } else if(minus_option >= 0.0 && minus_option <= ds->length) {
+    //     printf("gotominus=%f", minus_option);
+    //     return minus_option;
+    // }
+    // printf("gotoplus%f=", plus_option);
+    // if(minus_option < 0.0) {
+    //     // printf("")
+    //     return 0.0;
+    // }
+    // printf("gotominus=%f\n", minus_option);
+    // if((int)ds->start.x == 206) {
+    //     // printf("start={%f, %f, %f}", ds->start.x, ds->start.y, ds->start.z);
+    //     // printf("end={%f, %f, %f}", ds->end.x, ds->end.y, ds->end.z);
+    //     printf("target={%f, %f, %f}", target.x, target.y, target.z);
+    //     printf("closest_pos={%f, %f, %f}", closest_pos.x, closest_pos.y, closest_pos.z);
+    //     printf("dist_to_act2=%f", dist_to_act2);
+    //     printf("pos_on_actuator=%f", pos_on_actuator);
+    //     // printf("dslength=%f", ds->length);
+    //     printf("gotominus=%f\n", minus_option);
+    // }
+    return minus_option;
 }
 
 struct stepper_kinematics * __visible
@@ -82,7 +116,7 @@ convergent_delta_stepper_alloc( double arm2, double x1, double y1, double z1, do
     memset(ds, 0, sizeof(*ds));
 
     ds->arm2 = arm2;
-    ds->length2 = dot(x1, y1, z1, x2, y2, z2);
+    ds->length2 = length2(x1, y1, z1, x2, y2, z2);
     ds->length = sqrt(ds->length2);
 
     ds->start.x = x1;

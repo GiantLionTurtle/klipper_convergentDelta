@@ -11,7 +11,7 @@ class Actuator:
     def at_lerp(self, lerp):
         return mathutil.matrix_add(mathutil.matrix_mul(self.direction(), lerp), self.start)
     def at_dist(self, dist):
-        return self.at_lerp(dist / self.length) # is this right within the context of clipper?
+        return self.at_lerp(dist / self.length) # is this right within the context of klipper?
 
     def direction(self):
         # return self.end.minus(self.start)
@@ -76,6 +76,8 @@ class ConvergentDeltaKinematics:
         for rail, arm2, act in zip(out.rails, out.arm2, out.actuators):
             rail.setup_itersolve('convergent_delta_stepper_alloc', arm2, 
                 act.start[0], act.start[1], act.start[2], act.end[0], act.end[1], act.end[2])
+        # for rail, axis in zip(out.rails, 'xyz'):
+        #     rail.setup_itersolve('cartesian_stepper_alloc', axis.encode())
         for s in out.get_steppers():
             s.set_trapq(toolhead.get_trapq())
             toolhead.register_step_generator(s.generate_steps)
@@ -110,11 +112,11 @@ class ConvergentDeltaKinematics:
     def clear_homing_state(self, clear_axes):
         if clear_axes:
             self.need_home = True
+
     def home(self, homing_state):
-        # Home all axes at the same time
         homing_state.set_axes([0, 1, 2])
         forcepos = list(self.home_position)
-        forcepos[2] = forcepos[2]-100
+        forcepos[2] = -2 * self.work_height
         homing_state.home_rails(self.rails, forcepos, self.home_position)
 
     def check_move(self, move):
@@ -126,8 +128,9 @@ class ConvergentDeltaKinematics:
         
         if (end_pos[0]**2 + end_pos[1]**2) > self.work_radius2:
             raise move.move_error("Outside work cylinder [xy]")
-        
-        if end_pos[2] > self.work_height or end_pos[2] < 0.0: 
+
+        # Allow higher than work cylinder as long as it is centered (homing)
+        if (end_pos[2] > self.work_height and end_pos[0]**2 > 1 and end_pos[1]**2 > 1) or end_pos[2] < 0.0: 
             raise move.move_error("Outside work cylinder [z]")
 
         
