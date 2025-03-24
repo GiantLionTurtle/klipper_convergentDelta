@@ -71,7 +71,7 @@ class ConvergentDeltaKinematics:
 
         out.need_home = True
         out.home_position = tuple(out._actuators_to_cartesian([0.0, 0.0, 0.0]))
-        
+
 
         for rail, arm2, act in zip(out.rails, out.arm2, out.actuators):
             rail.setup_itersolve('convergent_delta_stepper_alloc', arm2, 
@@ -103,6 +103,20 @@ class ConvergentDeltaKinematics:
         spos = [stepper_positions[rail.get_name()] for rail in self.rails]
         return self._actuators_to_cartesian(spos)
 
+    # @staticmethod
+    # def _cartesian_to_actuator(actuator: Actuator, cpos):
+    #     dir = mathutil.matrix_sub(actuator.end, actuator.start)
+    #     pos_to_start = mathutil.matrix_sub(cpos, actuator.start)
+    #     lerp = mathutil.matrix_dot(dir, pos_to_start) / (actuator.length**2)
+
+    #     closest_pos = mathutil.matrix_add(actuator.start, mathutil.matrix_mul(dir, [lerp, lerp, lerp]));
+    #     closest_pos_on_actuator = lerp * actuator.length
+        
+    #     dist_to_act = dot
+
+    # def _cartesian_to_actuators(self, cpos):
+        
+
     def set_position(self, newpos, homing_axes):
         for rail in self.rails:
             rail.set_position(newpos)
@@ -130,7 +144,7 @@ class ConvergentDeltaKinematics:
             raise move.move_error("Outside work cylinder [xy]")
 
         # Allow higher than work cylinder as long as it is centered (homing)
-        if (end_pos[2] > self.work_height and end_pos[0]**2 > 1 and end_pos[1]**2 > 1) or end_pos[2] < 0.0: 
+        if (end_pos[2] > self.work_height and (end_pos[0]**2 > 1 or end_pos[1]**2 > 1)) or end_pos[2] < 0.0: 
             raise move.move_error("Outside work cylinder [z]")
 
         
