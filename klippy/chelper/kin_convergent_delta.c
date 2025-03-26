@@ -71,7 +71,7 @@ convdelta_stepper_calc_position(struct stepper_kinematics *sk, struct move *m
     // // Not directly perpendicular, not too far
     // // solve for second cathede of a right triangle
     double offset_along_actuator = sqrt(ds->arm2 - dist_to_act2);
-    
+    // printf("actuator[%i]=>%f\n", (int)ds->start.x, pos_on_actuator-offset_along_actuator);
     return pos_on_actuator - offset_along_actuator;
 }
 
